@@ -3,15 +3,19 @@ import { Users, Activity, Clock, ShieldCheck, TrendingUp, XCircle, CheckCircle, 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
-import type { Alert, UserRole } from '@/types';
+import type { Alert, UserRole, ApprovalFlow, ApprovalStep } from '@shared/types';
 import { useAppStore } from '@/store/appStore';
 import { cn } from '@/lib/utils';
+
+type ExtendedAlert = Alert & {
+  approvalFlow?: ApprovalFlow & { steps: ApprovalStep[] };
+};
 
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
 
 interface AlertCardProps {
-  alert: Alert;
+  alert: ExtendedAlert;
   onHandle?: () => void;
   onEscalate?: () => void;
   onViewApproval?: () => void;
@@ -50,7 +54,7 @@ const rolePermissions: Record<UserRole, string[]> = {
 };
 
 export default function AlertCard({ alert, onHandle, onEscalate, onViewApproval }: AlertCardProps) {
-  const { currentUser, handleAlert, resolveAlert } = useAppStore();
+  const { user, handleAlert, resolveAlert } = useAppStore();
   const [now, setNow] = useState(dayjs());
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function AlertCard({ alert, onHandle, onEscalate, onViewApproval 
   const minutes = duration % 60;
   const durationText = hours > 0 ? `${hours}小时${minutes}分钟` : `${minutes}分钟`;
 
-  const permissions = currentUser ? rolePermissions[currentUser.role] || [] : [];
+  const permissions = user ? rolePermissions[user.role] || [] : [];
   const canHandle = permissions.includes('handle') && alert.status === 'active';
   const canResolve = permissions.includes('resolve') && (alert.status === 'processing' || alert.status === 'escalated');
   const canEscalate = permissions.includes('escalate') && (alert.status === 'active' || alert.status === 'processing') && !alert.approvalFlow;
@@ -76,8 +80,8 @@ export default function AlertCard({ alert, onHandle, onEscalate, onViewApproval 
     : 0;
 
   const handleHandle = () => {
-    if (currentUser) {
-      handleAlert(alert.id, currentUser.name);
+    if (user) {
+      handleAlert(alert.id, user.name);
     }
     onHandle?.();
   };

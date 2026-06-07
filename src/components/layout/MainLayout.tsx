@@ -1,8 +1,17 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useAppStore } from '@/store/appStore';
 
 export default function MainLayout() {
+  useRealtimeData();
+  const user = useAppStore((s) => s.user);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-navy-gradient relative">
       <div className="absolute inset-0 bg-grid-pattern bg-[size:30px_30px] opacity-40 pointer-events-none" />

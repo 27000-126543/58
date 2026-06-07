@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import dayjs from 'dayjs';
 import { TrendingUp } from 'lucide-react';
-import type { QueueRecord } from '@/types';
+import type { QueueRecord } from '@shared/types';
 import { cn } from '@/lib/utils';
 
 interface QueueTrendChartProps {

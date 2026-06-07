@@ -3,7 +3,7 @@ import {
   ArrowLeft, Clock, PlayCircle, Activity, Smile,
   Gauge, AlertTriangle, Wrench, CheckCircle
 } from 'lucide-react';
-import type { Ride } from '@/types';
+import type { Ride } from '@shared/types';
 import { cn } from '@/lib/utils';
 
 interface ProjectInfoHeaderProps {

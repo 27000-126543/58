@@ -1,35 +1,38 @@
 import dayjs from 'dayjs';
 import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
-import type { EquipmentFault, FaultSeverity } from '@/types';
 import { cn } from '@/lib/utils';
 
-interface FaultTimelineProps {
-  faults: EquipmentFault[];
+export interface RideFault {
+  id: string;
+  timestamp: string;
+  overallLevel: number;
+  threshold: number;
+  xAxis: number;
+  yAxis: number;
+  zAxis: number;
+  severity: 'warning' | 'critical';
 }
 
-const severityConfig: Record<FaultSeverity, {
+interface FaultTimelineProps {
+  faults: RideFault[];
+}
+
+const severityConfig: Record<RideFault['severity'], {
   label: string;
   bg: string;
   text: string;
   dot: string;
   border: string;
 }> = {
-  low: {
-    label: '低',
-    bg: 'bg-accent-teal/15',
-    text: 'text-accent-teal',
-    dot: 'bg-accent-teal',
-    border: 'border-accent-teal/50',
-  },
-  medium: {
-    label: '中',
+  warning: {
+    label: '警告',
     bg: 'bg-accent-gold/15',
     text: 'text-accent-gold',
     dot: 'bg-accent-gold',
     border: 'border-accent-gold/50',
   },
-  high: {
-    label: '高',
+  critical: {
+    label: '严重',
     bg: 'bg-accent-red/15',
     text: 'text-accent-red',
     dot: 'bg-accent-red',
@@ -39,7 +42,7 @@ const severityConfig: Record<FaultSeverity, {
 
 export default function FaultTimeline({ faults }: FaultTimelineProps) {
   const sortedFaults = [...faults].sort(
-    (a, b) => dayjs(b.occurredAt).valueOf() - dayjs(a.occurredAt).valueOf()
+    (a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf()
   );
 
   return (
@@ -49,7 +52,7 @@ export default function FaultTimeline({ faults }: FaultTimelineProps) {
           <div className="p-1.5 rounded-lg bg-accent-red/20">
             <AlertCircle className="w-4 h-4 text-accent-red" />
           </div>
-          <h3 className="text-white font-semibold text-base">设备故障记录</h3>
+          <h3 className="text-white font-semibold text-base">设备异常记录</h3>
         </div>
         <span className="text-xs text-metal-500 bg-navy-900/50 px-2.5 py-1 rounded-full border border-navy-700/40">
           共 {faults.length} 条
@@ -60,12 +63,11 @@ export default function FaultTimeline({ faults }: FaultTimelineProps) {
         {sortedFaults.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-metal-500">
             <CheckCircle2 className="w-10 h-10 mb-2 opacity-40" />
-            <p className="text-sm">暂无故障记录</p>
+            <p className="text-sm">暂无异常记录</p>
           </div>
         ) : (
           sortedFaults.map((fault, index) => {
             const severity = severityConfig[fault.severity];
-            const isResolved = !!fault.resolvedAt;
             const isLast = index === sortedFaults.length - 1;
 
             return (
@@ -84,36 +86,24 @@ export default function FaultTimeline({ faults }: FaultTimelineProps) {
 
                 <div className="flex-1 pb-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="text-white font-medium text-sm">{fault.type}</span>
+                    <span className="text-white font-medium text-sm">振动值异常</span>
                     <span className={cn(
                       'px-2 py-0.5 rounded text-xs font-medium',
                       severity.bg, severity.text
                     )}>
-                      {severity.label}危
-                    </span>
-                    <span className={cn(
-                      'flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium',
-                      isResolved
-                        ? 'bg-accent-teal/15 text-accent-teal'
-                        : 'bg-accent-orange/15 text-accent-orange'
-                    )}>
-                      {isResolved ? (
-                        <><CheckCircle2 className="w-3 h-3" />已解决</>
-                      ) : (
-                        <><Clock className="w-3 h-3" />处理中</>
-                      )}
+                      {severity.label}
                     </span>
                   </div>
 
                   <p className="text-metal-300 text-sm mb-1.5 leading-relaxed">
-                    {fault.description}
+                    振动值 <span className="text-white font-mono">{fault.overallLevel} mm/s</span>
+                    ，超过阈值 <span className="text-accent-orange font-mono">{fault.threshold} mm/s</span>
+                    （X:{fault.xAxis.toFixed(2)} Y:{fault.yAxis.toFixed(2)} Z:{fault.zAxis.toFixed(2)}）
                   </p>
 
                   <div className="flex items-center gap-3 text-xs text-metal-500">
-                    <span>发生: {dayjs(fault.occurredAt).format('MM-DD HH:mm')}</span>
-                    {isResolved && (
-                      <span>解决: {dayjs(fault.resolvedAt).format('MM-DD HH:mm')}</span>
-                    )}
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{dayjs(fault.timestamp).format('MM-DD HH:mm:ss')}</span>
                   </div>
                 </div>
               </div>

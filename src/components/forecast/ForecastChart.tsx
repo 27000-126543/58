@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import dayjs from 'dayjs';
 import { TrendingUp, Users, Clock } from 'lucide-react';
-import type { ForecastData } from '@/types';
+import type { ForecastData } from '@shared/types';
 
 interface ForecastChartProps {
   data: ForecastData[];

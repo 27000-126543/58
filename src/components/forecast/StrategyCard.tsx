@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Clock,
   Mic2,
@@ -8,8 +7,9 @@ import {
   Target,
   Sparkles,
 } from 'lucide-react';
-import type { StrategyRecommendation, StrategyType, PriorityType } from '@/types';
+import type { StrategyRecommendation, StrategyType, PriorityType } from '@shared/types';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/appStore';
 
 interface StrategyCardProps {
   strategy: StrategyRecommendation;
@@ -29,7 +29,8 @@ const priorityConfig: Record<PriorityType, { label: string; bg: string; text: st
 };
 
 export default function StrategyCard({ strategy }: StrategyCardProps) {
-  const [adopted, setAdopted] = useState(false);
+  const adoptStrategy = useAppStore((state) => state.adoptStrategy);
+  const adopted = !!strategy.adopted;
   const iconConfig = strategyIconMap[strategy.type];
   const priority = priorityConfig[strategy.priority];
   const Icon = iconConfig.icon;
@@ -93,7 +94,8 @@ export default function StrategyCard({ strategy }: StrategyCardProps) {
       </div>
 
       <button
-        onClick={() => setAdopted(!adopted)}
+        onClick={() => adoptStrategy(strategy.id)}
+        disabled={adopted}
         className={cn(
           'w-full py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2',
           adopted

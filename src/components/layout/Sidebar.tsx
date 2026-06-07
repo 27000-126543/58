@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -12,8 +12,8 @@ import {
   FerrisWheel,
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import type { User as UserType } from '@shared/types';
 import { cn } from '@/lib/utils';
-import { mockUsers } from '@/data/mockData';
 
 const menuItems = [
   { path: '/dashboard', label: '核心看板', icon: LayoutDashboard },
@@ -25,16 +25,21 @@ const menuItems = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { currentUser, login, logout } = useAppStore();
+  const [userList, setUserList] = useState<UserType[]>([]);
+  const { user, login, logout, fetchUsers } = useAppStore();
   const navigate = useNavigate();
 
-  const handleSwitchRole = (userId: string) => {
-    login(userId);
+  useEffect(() => {
+    fetchUsers().then(setUserList);
+  }, [fetchUsers]);
+
+  const handleSwitchRole = async (userId: string) => {
+    await login(userId);
     setShowUserMenu(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -106,12 +111,12 @@ export default function Sidebar() {
             )}
           >
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent-orange to-accent-gold flex items-center justify-center text-lg flex-shrink-0 shadow-glow-orange/30">
-              {currentUser?.avatar || '👤'}
+              {user?.avatar || '👤'}
             </div>
             {!collapsed && (
               <div className="flex-1 text-left overflow-hidden">
-                <div className="text-white text-sm font-medium truncate">{currentUser?.name}</div>
-                <div className="text-metal-400 text-xs truncate">{currentUser?.roleName}</div>
+                <div className="text-white text-sm font-medium truncate">{user?.name}</div>
+                <div className="text-metal-400 text-xs truncate">{user?.roleName}</div>
               </div>
             )}
           </button>
@@ -121,19 +126,19 @@ export default function Sidebar() {
               <div className="px-3 py-2 border-b border-navy-600/40">
                 <p className="text-xs text-metal-400 mb-2">切换角色</p>
                 <div className="space-y-1">
-                  {mockUsers.map((user) => (
+                  {userList.map((u) => (
                     <button
-                      key={user.id}
-                      onClick={() => handleSwitchRole(user.id)}
+                      key={u.id}
+                      onClick={() => handleSwitchRole(u.id)}
                       className={cn(
                         'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors',
-                        currentUser?.id === user.id
+                        user?.id === u.id
                           ? 'bg-accent-teal/20 text-accent-teal'
                           : 'text-metal-300 hover:bg-navy-700/60 hover:text-white'
                       )}
                     >
                       <UserCog className="w-3.5 h-3.5" />
-                      <span>{user.roleName}</span>
+                      <span>{u.roleName}</span>
                     </button>
                   ))}
                 </div>

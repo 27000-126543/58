@@ -1,7 +1,7 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
-import { Upload, FileSpreadsheet, Cloud, X, CheckCircle } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { Upload, FileSpreadsheet, Cloud, X, CheckCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/appStore';
 
 interface FileUploaderProps {
   title: string;
@@ -44,10 +44,13 @@ export default function FileUploader({ title, subtitle, type }: FileUploaderProp
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [parsing, setParsing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const config = typeConfig[type];
+  const uploadWeather = useAppStore((s) => s.uploadWeather);
+  const uploadEvent = useAppStore((s) => s.uploadEvent);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     const validExtensions = ['.xlsx', '.xls'];
     const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     if (!validExtensions.includes(extension)) {
@@ -56,22 +59,22 @@ export default function FileUploader({ title, subtitle, type }: FileUploaderProp
     }
 
     setParsing(true);
+    setError(null);
     setUploadedFile({ name: file.name, size: file.size, parsed: false });
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        XLSX.read(data);
-      } catch {
-      } finally {
-        setTimeout(() => {
-          setUploadedFile(prev => prev ? { ...prev, parsed: true } : null);
-          setParsing(false);
-        }, 600);
+    try {
+      if (type === 'weather') {
+        await uploadWeather(file);
+      } else {
+        await uploadEvent(file);
       }
-    };
-    reader.readAsArrayBuffer(file);
+      setUploadedFile((prev) => (prev ? { ...prev, parsed: true } : null));
+    } catch (err: any) {
+      setError(err.message || '上传失败');
+      setUploadedFile(null);
+    } finally {
+      setParsing(false);
+    }
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -133,9 +136,15 @@ export default function FileUploader({ title, subtitle, type }: FileUploaderProp
                   </span>
                 )}
                 {!uploadedFile.parsed && parsing && (
-                  <span className="text-metal-400 text-xs">解析中...</span>
+                  <span className="flex items-center gap-1 text-accent-orange text-xs">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    上传中...
+                  </span>
                 )}
               </div>
+              {error && (
+                <p className="text-accent-red text-xs mt-2">{error}</p>
+              )}
             </div>
           </div>
           <button

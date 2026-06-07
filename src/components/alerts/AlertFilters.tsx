@@ -1,5 +1,5 @@
 import { Filter, AlertTriangle, Users, Activity, Clock, ShieldCheck, TrendingUp, CheckCircle, MapPin } from 'lucide-react';
-import type { AlertLevel, AlertType, AlertStatus } from '@/types';
+import type { AlertLevel, AlertType, AlertStatus } from '@shared/types';
 import { useAppStore } from '@/store/appStore';
 import { cn } from '@/lib/utils';
 

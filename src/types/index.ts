@@ -138,6 +138,7 @@ export interface StrategyRecommendation {
   expectedImpact: string;
   confidence: number;
   priority: PriorityType;
+  adopted?: boolean;
 }
 
 export interface WeeklyReport {

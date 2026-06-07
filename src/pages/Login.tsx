@@ -1,19 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FerrisWheel, User, Lock, ArrowRight } from 'lucide-react';
+import { FerrisWheel, User, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
-import { mockUsers } from '@/data/mockData';
+import type { User as UserType } from '@shared/types';
 import { cn } from '@/lib/utils';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAppStore();
+  const { login, fetchUsers } = useAppStore();
+  const [users, setUsers] = useState<UserType[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
-  const handleLogin = () => {
-    if (selectedUser) {
-      login(selectedUser);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await fetchUsers();
+        if (mounted) setUsers(data);
+      } finally {
+        if (mounted) setLoadingUsers(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [fetchUsers]);
+
+  const handleLogin = async () => {
+    if (!selectedUser) return;
+    setLoading(true);
+    try {
+      await login(selectedUser);
       navigate('/dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,60 +59,83 @@ export default function Login() {
           <h2 className="text-xl font-semibold text-white mb-2">选择账号登录</h2>
           <p className="text-metal-400 text-sm mb-6">演示环境，请选择您要使用的角色</p>
 
-          <div className="space-y-2 mb-6">
-            {mockUsers.map((user) => (
-              <button
-                key={user.id}
-                onClick={() => setSelectedUser(user.id)}
-                className={cn(
-                  'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200',
-                  selectedUser === user.id
-                    ? 'bg-accent-teal/10 border-accent-teal/50 shadow-glow-teal/20'
-                    : 'bg-navy-700/40 border-navy-600/40 hover:border-navy-500/60 hover:bg-navy-700/60'
-                )}
-              >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-orange to-accent-gold flex items-center justify-center text-xl flex-shrink-0">
-                  {user.avatar || <User className="w-5 h-5 text-white" />}
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="text-white font-medium">{user.name}</div>
-                  <div className="text-metal-400 text-sm">{user.roleName}</div>
-                </div>
-                <div
+          <div className="space-y-2 mb-6 min-h-[200px]">
+            {loadingUsers ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="w-full flex items-center gap-3 p-3 rounded-xl bg-navy-700/40 border border-navy-600/40">
+                    <div className="w-10 h-10 rounded-full bg-metal-600/50 animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-24 bg-metal-600/50 rounded animate-pulse" />
+                      <div className="h-3 w-32 bg-metal-600/30 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              users.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => setSelectedUser(user.id)}
                   className={cn(
-                    'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
-                    selectedUser === user.id ? 'border-accent-teal bg-accent-teal' : 'border-metal-500'
+                    'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200',
+                    selectedUser === user.id
+                      ? 'bg-accent-teal/10 border-accent-teal/50 shadow-glow-teal/20'
+                      : 'bg-navy-700/40 border-navy-600/40 hover:border-navy-500/60 hover:bg-navy-700/60'
                   )}
                 >
-                  {selectedUser === user.id && (
-                    <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-                      <path
-                        d="M2 6L5 9L10 3"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </button>
-            ))}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-orange to-accent-gold flex items-center justify-center text-xl flex-shrink-0">
+                    {user.avatar || <User className="w-5 h-5 text-white" />}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="text-white font-medium">{user.name}</div>
+                    <div className="text-metal-400 text-sm">{user.roleName}</div>
+                  </div>
+                  <div
+                    className={cn(
+                      'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+                      selectedUser === user.id ? 'border-accent-teal bg-accent-teal' : 'border-metal-500'
+                    )}
+                  >
+                    {selectedUser === user.id && (
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                        <path
+                          d="M2 6L5 9L10 3"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
           </div>
 
           <button
             onClick={handleLogin}
-            disabled={!selectedUser}
+            disabled={!selectedUser || loading}
             className={cn(
               'w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all duration-200',
-              selectedUser
+              selectedUser && !loading
                 ? 'bg-gradient-to-r from-accent-teal to-accent-purple text-white shadow-glow-teal hover:shadow-lg hover:scale-[1.02]'
                 : 'bg-navy-700/60 text-metal-500 cursor-not-allowed'
             )}
           >
-            <Lock className="w-4 h-4" />
-            <span>登录系统</span>
-            <ArrowRight className="w-4 h-4" />
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>登录中...</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>登录系统</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
 

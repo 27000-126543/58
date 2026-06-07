@@ -1,13 +1,13 @@
-import { AlertTriangle, Frown, Repeat, Clock, Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { AlertTriangle, Clock, Users, Smile, TrendingUp, TrendingDown, Wrench, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { WeeklyReport } from '@/types';
+import type { WeeklyReport, WeeklyMetric } from '@shared/types';
 
 interface MetricsComparisonProps {
   reports: WeeklyReport[];
   selectedIndex: number;
 }
 
-type MetricKey = 'equipmentFaultRate' | 'visitorComplaintRate' | 'rideTurnoverRate' | 'avgWaitTime' | 'totalVisitors';
+type MetricKey = 'totalVisitors' | 'avgWaitTime' | 'satisfaction' | 'restaurantRevenue' | 'rideAvailability';
 
 interface MetricConfig {
   key: MetricKey;
@@ -24,40 +24,16 @@ interface MetricConfig {
 
 const metricConfigs: MetricConfig[] = [
   {
-    key: 'equipmentFaultRate',
-    title: '设备故障率',
-    unit: '%',
-    icon: <AlertTriangle className="w-5 h-5" />,
-    iconBg: 'bg-accent-red/20',
-    iconColor: 'text-accent-red',
-    gradient: 'from-accent-red/15 via-accent-red/5 to-transparent',
-    border: 'border-accent-red/20',
-    lowerIsBetter: true,
-    formatValue: (v) => v.toFixed(1),
-  },
-  {
-    key: 'visitorComplaintRate',
-    title: '游客投诉率',
-    unit: '%',
-    icon: <Frown className="w-5 h-5" />,
-    iconBg: 'bg-accent-orange/20',
-    iconColor: 'text-accent-orange',
-    gradient: 'from-accent-orange/15 via-accent-orange/5 to-transparent',
-    border: 'border-accent-orange/20',
-    lowerIsBetter: true,
-    formatValue: (v) => v.toFixed(2),
-  },
-  {
-    key: 'rideTurnoverRate',
-    title: '项目周转率',
-    unit: '次',
-    icon: <Repeat className="w-5 h-5" />,
-    iconBg: 'bg-accent-purple/20',
-    iconColor: 'text-accent-purple',
-    gradient: 'from-accent-purple/15 via-accent-purple/5 to-transparent',
-    border: 'border-accent-purple/20',
+    key: 'totalVisitors',
+    title: '周客流总量',
+    unit: '人次',
+    icon: <Users className="w-5 h-5" />,
+    iconBg: 'bg-accent-teal/20',
+    iconColor: 'text-accent-teal',
+    gradient: 'from-accent-teal/15 via-accent-teal/5 to-transparent',
+    border: 'border-accent-teal/20',
     lowerIsBetter: false,
-    formatValue: (v) => v.toFixed(1),
+    formatValue: (v) => v.toLocaleString(),
   },
   {
     key: 'avgWaitTime',
@@ -72,16 +48,40 @@ const metricConfigs: MetricConfig[] = [
     formatValue: (v) => v.toFixed(0),
   },
   {
-    key: 'totalVisitors',
-    title: '周客流总量',
-    unit: '人次',
-    icon: <Users className="w-5 h-5" />,
-    iconBg: 'bg-accent-teal/20',
-    iconColor: 'text-accent-teal',
-    gradient: 'from-accent-teal/15 via-accent-teal/5 to-transparent',
-    border: 'border-accent-teal/20',
+    key: 'satisfaction',
+    title: '游客满意度',
+    unit: '分',
+    icon: <Smile className="w-5 h-5" />,
+    iconBg: 'bg-accent-purple/20',
+    iconColor: 'text-accent-purple',
+    gradient: 'from-accent-purple/15 via-accent-purple/5 to-transparent',
+    border: 'border-accent-purple/20',
     lowerIsBetter: false,
-    formatValue: (v) => v.toLocaleString(),
+    formatValue: (v) => v.toFixed(1),
+  },
+  {
+    key: 'restaurantRevenue',
+    title: '餐饮收入',
+    unit: '元',
+    icon: <DollarSign className="w-5 h-5" />,
+    iconBg: 'bg-accent-orange/20',
+    iconColor: 'text-accent-orange',
+    gradient: 'from-accent-orange/15 via-accent-orange/5 to-transparent',
+    border: 'border-accent-orange/20',
+    lowerIsBetter: false,
+    formatValue: (v) => '¥' + v.toLocaleString(),
+  },
+  {
+    key: 'rideAvailability',
+    title: '设备可用率',
+    unit: '%',
+    icon: <Wrench className="w-5 h-5" />,
+    iconBg: 'bg-accent-red/20',
+    iconColor: 'text-accent-red',
+    gradient: 'from-accent-red/15 via-accent-red/5 to-transparent',
+    border: 'border-accent-red/20',
+    lowerIsBetter: false,
+    formatValue: (v) => v.toFixed(1),
   },
 ];
 
@@ -199,24 +199,25 @@ export default function MetricsComparison({ reports, selectedIndex }: MetricsCom
   if (!currentReport) return null;
 
   const sparklineColors: Record<MetricKey, string> = {
-    equipmentFaultRate: '#EF476F',
-    visitorComplaintRate: '#FF6B35',
-    rideTurnoverRate: '#9B5DE5',
-    avgWaitTime: '#FFD166',
     totalVisitors: '#00D4AA',
+    avgWaitTime: '#FFD166',
+    satisfaction: '#9B5DE5',
+    restaurantRevenue: '#FF6B35',
+    rideAvailability: '#EF476F',
   };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {metricConfigs.map((config) => {
-        const metric = currentReport.metrics[config.key];
+        const metric: WeeklyMetric = currentReport[config.key];
+        if (!metric) return null;
         const wowChange = calcChange(metric.current, metric.lastWeek);
         const yoyChange = calcChange(metric.current, metric.lastYear);
 
         const sparklineData = reports
           .slice()
           .reverse()
-          .map((r) => r.metrics[config.key].current);
+          .map((r) => r[config.key]?.current ?? 0);
 
         return (
           <div

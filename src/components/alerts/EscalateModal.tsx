@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ArrowUpRight, Users, Zap, AlertTriangle, CheckCircle2, Shield, FileText } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { Alert, ActionType } from '@/types';
+import type { Alert, ActionType } from '@shared/types';
 import { useAppStore } from '@/store/appStore';
 import { cn } from '@/lib/utils';
 

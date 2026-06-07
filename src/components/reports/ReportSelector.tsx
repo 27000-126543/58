@@ -2,7 +2,7 @@ import { useState } from 'react';
 import dayjs from 'dayjs';
 import { Download, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { WeeklyReport } from '@/types';
+import type { WeeklyReport } from '@shared/types';
 
 interface ReportSelectorProps {
   reports: WeeklyReport[];

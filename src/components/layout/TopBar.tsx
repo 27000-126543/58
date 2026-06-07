@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useAppStore } from '@/store/appStore';
+import type { User as UserType } from '@shared/types';
 import { cn } from '@/lib/utils';
-import { mockUsers } from '@/data/mockData';
 
 const breadcrumbMap: Record<string, { label: string; parent?: string }> = {
   '/dashboard': { label: '核心看板' },
@@ -30,7 +30,8 @@ export default function TopBar() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { currentUser, selectedDate, setSelectedDate, alerts, login, logout } = useAppStore();
+  const [userList, setUserList] = useState<UserType[]>([]);
+  const { user, selectedDate, setSelectedDate, alerts, login, logout, fetchUsers } = useAppStore();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -38,6 +39,10 @@ export default function TopBar() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    fetchUsers().then(setUserList);
+  }, [fetchUsers]);
 
   const pathname = location.pathname;
   const activeAlerts = alerts.filter((a) => a.status === 'active' || a.status === 'processing' || a.status === 'escalated');
@@ -58,13 +63,13 @@ export default function TopBar() {
 
   const breadcrumbs = getBreadcrumbs();
 
-  const handleSwitchRole = (userId: string) => {
-    login(userId);
+  const handleSwitchRole = async (userId: string) => {
+    await login(userId);
     setShowUserMenu(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -186,11 +191,11 @@ export default function TopBar() {
       <div className="px-4 py-3 border-b border-navy-600/40">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-orange to-accent-gold flex items-center justify-center text-xl">
-            {currentUser?.avatar || '👤'}
+            {user?.avatar || '👤'}
           </div>
           <div>
-            <div className="text-white text-sm font-medium">{currentUser?.name}</div>
-            <div className="text-metal-400 text-xs">{currentUser?.roleName}</div>
+            <div className="text-white text-sm font-medium">{user?.name}</div>
+            <div className="text-metal-400 text-xs">{user?.roleName}</div>
           </div>
         </div>
       </div>
@@ -201,19 +206,19 @@ export default function TopBar() {
             切换角色
           </p>
           <div className="space-y-0.5">
-            {mockUsers.map((user) => (
+            {userList.map((u) => (
               <button
-                key={user.id}
-                onClick={() => handleSwitchRole(user.id)}
+                key={u.id}
+                onClick={() => handleSwitchRole(u.id)}
                 className={cn(
                   'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
-                  currentUser?.id === user.id
+                  user?.id === u.id
                     ? 'bg-accent-teal/20 text-accent-teal'
                     : 'text-metal-300 hover:bg-navy-700/60 hover:text-white'
                 )}
               >
-                <span>{user.avatar}</span>
-                <span>{user.roleName}</span>
+                <span>{u.avatar}</span>
+                <span>{u.roleName}</span>
               </button>
             ))}
           </div>
@@ -310,7 +315,7 @@ export default function TopBar() {
             className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-navy-700/50 transition-colors"
           >
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent-orange to-accent-gold flex items-center justify-center text-lg shadow-glow-orange/30">
-              {currentUser?.avatar || <User className="w-5 h-5 text-white" />}
+              {user?.avatar || <User className="w-5 h-5 text-white" />}
             </div>
           </button>
           {showUserMenu && renderUserMenu()}

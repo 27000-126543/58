@@ -1,10 +1,35 @@
 import { useAppStore } from '@/store/appStore';
 import MetricCard from './MetricCard';
 
-export default function MetricCardGroup() {
-  const globalMetrics = useAppStore(state => state.globalMetrics);
+function SkeletonCard() {
+  return (
+    <div className="p-5 rounded-2xl border border-navy-700/50 bg-navy-800/40 backdrop-blur-sm">
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-11 h-11 rounded-xl bg-metal-700/40 animate-pulse" />
+        <div className="h-6 w-16 rounded-lg bg-metal-700/40 animate-pulse" />
+      </div>
+      <div className="h-9 w-32 bg-metal-700/40 rounded animate-pulse mb-2" />
+      <div className="flex items-center justify-between">
+        <div className="h-4 w-24 bg-metal-700/30 rounded animate-pulse" />
+        <div className="h-3 w-16 bg-metal-700/20 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
-  // 计算同比变化率
+export default function MetricCardGroup() {
+  const globalMetrics = useAppStore((state) => state.globalMetrics);
+
+  if (!globalMetrics) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
+
   const calcChange = (current: number, yesterday: number) => {
     if (yesterday === 0) return 0;
     return ((current - yesterday) / yesterday) * 100;

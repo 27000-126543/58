@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import dayjs from 'dayjs';
 import { BarChart3, Users, Clock } from 'lucide-react';
-import type { WeeklyReport } from '@/types';
+import type { WeeklyReport } from '@shared/types';
 
 interface TooltipParam {
   axisValue: string;
@@ -28,8 +28,8 @@ export default function TrendChart({ reports }: TrendChartProps) {
       const end = dayjs(r.weekEnd);
       return `${start.format('M/D')}-${end.format('M/D')}`;
     });
-    const visitorData = sortedReports.map((r) => r.metrics.totalVisitors.current);
-    const waitTimeData = sortedReports.map((r) => r.metrics.avgWaitTime.current);
+    const visitorData = sortedReports.map((r) => r.totalVisitors.current);
+    const waitTimeData = sortedReports.map((r) => r.avgWaitTime.current);
 
     const totalVisitors = visitorData.reduce((a, b) => a + b, 0);
     const avgWaitTime = Math.round(

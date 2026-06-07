@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { X, Check, XCircle, Clock, User, Send, ArrowUpRight, MessageSquare } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { Alert, UserRole } from '@/types';
+import type { Alert, UserRole, ApprovalFlow, ApprovalStep } from '@shared/types';
 import { useAppStore } from '@/store/appStore';
 import { cn } from '@/lib/utils';
 
+type ExtendedAlert = Alert & {
+  approvalFlow?: ApprovalFlow & { steps: ApprovalStep[] };
+  escalatedAt?: string;
+};
+
 interface ApprovalFlowModalProps {
-  alert: Alert;
+  alert: ExtendedAlert;
   onClose: () => void;
 }
 
@@ -38,7 +43,7 @@ const statusConfig = {
 };
 
 export default function ApprovalFlowModal({ alert, onClose }: ApprovalFlowModalProps) {
-  const { currentUser, approveStep, rejectStep } = useAppStore();
+  const { user, approveStep, rejectStep } = useAppStore();
   const [comment, setComment] = useState('');
   const [isVisible, setIsVisible] = useState(false);
 
@@ -56,31 +61,31 @@ export default function ApprovalFlowModal({ alert, onClose }: ApprovalFlowModalP
   if (!flow) return null;
 
   const canApproveCurrentStep = (stepIndex: number): boolean => {
-    if (!currentUser || !flow) return false;
+    if (!user || !flow) return false;
     if (flow.currentStep !== stepIndex) return false;
     const requiredRole = stepRoleMap[stepIndex];
     if (!requiredRole) return false;
     const step = flow.steps[stepIndex];
     if (step.status !== 'pending') return false;
-    if (currentUser.role === 'gm') return true;
-    if (currentUser.role === 'director' && stepIndex <= 1) return true;
-    if (currentUser.role === 'zone_manager' && stepIndex === 0) {
-      if (currentUser.zoneIds && currentUser.zoneIds.includes(alert.zoneId)) {
+    if (user.role === 'gm') return true;
+    if (user.role === 'director' && stepIndex <= 1) return true;
+    if (user.role === 'zone_manager' && stepIndex === 0) {
+      if (user.zoneIds && user.zoneIds.includes(alert.zoneId)) {
         return true;
       }
     }
-    return currentUser.role === requiredRole;
+    return user.role === requiredRole;
   };
 
   const handleApprove = (stepIndex: number) => {
-    if (!currentUser) return;
-    approveStep(alert.id, stepIndex, currentUser.id, currentUser.name, comment.trim() || undefined);
+    if (!user) return;
+    approveStep(alert.id, stepIndex, comment.trim() || undefined);
     setComment('');
   };
 
   const handleReject = (stepIndex: number) => {
-    if (!currentUser) return;
-    rejectStep(alert.id, stepIndex, currentUser.id, currentUser.name, comment.trim() || undefined);
+    if (!user) return;
+    rejectStep(alert.id, stepIndex, comment.trim() || undefined);
     setComment('');
   };
 

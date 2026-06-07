@@ -1,14 +1,69 @@
-import { RefreshCw, TrendingUp, Lightbulb } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { RefreshCw, TrendingUp, Lightbulb, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import FileUploader from '@/components/forecast/FileUploader';
 import ForecastChart from '@/components/forecast/ForecastChart';
 import StrategyCard from '@/components/forecast/StrategyCard';
 import dayjs from 'dayjs';
+import { cn } from '@/lib/utils';
+
+function ForecastSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="space-y-2">
+          <div className="h-8 w-36 bg-metal-700/40 rounded animate-pulse" />
+          <div className="h-4 w-72 bg-metal-700/30 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="h-52 bg-navy-800/60 rounded-2xl border border-navy-700/50 animate-pulse" />
+          <div className="h-52 bg-navy-800/60 rounded-2xl border border-navy-700/50 animate-pulse" />
+          <div className="h-14 bg-navy-800/60 rounded-2xl border border-navy-700/50 animate-pulse" />
+          <div className="h-48 bg-navy-800/60 rounded-2xl border border-navy-700/50 animate-pulse" />
+        </div>
+        <div className="lg:col-span-3 h-[420px] bg-navy-800/60 rounded-2xl border border-navy-700/50 animate-pulse" />
+      </div>
+      <div className="space-y-4">
+        <div className="h-8 w-48 bg-metal-700/40 rounded animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[0, 1].map(i => (
+            <div key={i} className="h-64 bg-navy-800/60 rounded-2xl border border-navy-700/50 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Forecast() {
-  const forecastData = useAppStore(state => state.forecastData);
+  const forecast = useAppStore(state => state.forecast);
   const strategies = useAppStore(state => state.strategies);
+  const loading = useAppStore(state => state.loading.forecast);
   const regenerateForecast = useAppStore(state => state.regenerateForecast);
+  const fetchForecast = useAppStore(state => state.fetchForecast);
+  const user = useAppStore(state => state.user);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchForecast();
+    }
+  }, [fetchForecast, user]);
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true);
+    try {
+      await regenerateForecast();
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  if (loading && forecast.length === 0) {
+    return <ForecastSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
@@ -40,14 +95,24 @@ export default function Forecast() {
           />
 
           <button
-            onClick={regenerateForecast}
-            className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-accent-teal/20 to-accent-orange/20 
-                       border border-accent-teal/30 text-white font-medium
-                       hover:from-accent-teal/30 hover:to-accent-orange/30 
-                       transition-all duration-300 flex items-center justify-center gap-2 group"
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
+            className={cn(
+              'w-full py-3 px-5 rounded-2xl border text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 group',
+              isRegenerating
+                ? 'bg-navy-700/40 border-navy-600/50 cursor-not-allowed'
+                : 'bg-gradient-to-r from-accent-teal/20 to-accent-orange/20 border-accent-teal/30 hover:from-accent-teal/30 hover:to-accent-orange/30'
+            )}
           >
-            <RefreshCw className="w-5 h-5 text-accent-teal group-hover:rotate-180 transition-transform duration-500" />
-            重新生成预测
+            <RefreshCw className={cn('w-5 h-5 text-accent-teal', isRegenerating ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500')} />
+            {isRegenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              '重新生成预测'
+            )}
           </button>
 
           <div className="bg-navy-800/60 backdrop-blur-sm rounded-2xl border border-navy-700/50 p-4">
@@ -75,7 +140,7 @@ export default function Forecast() {
         </div>
 
         <div className="lg:col-span-3">
-          <ForecastChart data={forecastData} />
+          <ForecastChart data={forecast} />
         </div>
       </div>
 
